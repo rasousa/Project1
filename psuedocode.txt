@@ -1,0 +1,7 @@
+ID3 decision tree
+
+Evaluation criterion
+	Gini index
+	Information gain
+
+Split stopping with chi-square
