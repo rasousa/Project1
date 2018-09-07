@@ -7,8 +7,10 @@ import os
 
 def processFile(path):
     f = open(path, "r")
+    #line1 = f.readline()
+
     # Read into a numpy array
-    a = np.fromfile(f, sep=",")
+    a = np.genfromtxt(f, dtype=None, delimiter=',')
     f.close()
     return a
 
@@ -38,6 +40,7 @@ def main():
     testingData = processFile(testingPath)
 
     print(trainingData)
+    print(testingData)
 
 if __name__ == '__main__':
     main()
