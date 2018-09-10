@@ -5,3 +5,8 @@ Evaluation criterion
 	Information gain
 
 Split stopping with chi-square
+
+Notes:
+-label/class: IE, EI, N
+-features: string(0...59)
+-values: A, C, G, T, D, R, N
