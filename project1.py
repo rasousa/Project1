@@ -81,16 +81,7 @@ def decompose(data, pos):
 
 ### SPLIT CRITERIA ###
 
-def giniIndex(data, att):
-    result = 0
-    summary = countPerClass(data)
-    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
-    for count in summary:
-        proportion = count/totalExamples
-        result -= proportion * proportion
-    return 1 - result
-
-def entropy(data, att):
+def entropy(data):
     result = 0
     summary = countPerClass(data)
     totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
@@ -99,11 +90,21 @@ def entropy(data, att):
         result -= proportion * math.log2(proportion)
     return result
 
+def giniIndex(data):
+    result = 0
+    summary = countPerClass(data)
+    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
+    for count in summary:
+        proportion = count/totalExamples
+        result += proportion * proportion
+    return 1 - result
+
 def infoGain(data, att):
-    gain = entropy(data, att)
-    #for value in attributeValues(examples, attribute):
-        #sub = subset(examples, attribute, value)
-        #gain -=  (number in sub)/(total num of examples) * entropy(sub)
+    gain = entropy(data)
+    splitData = decompose(data, att)
+    totalExamples = np.size(data, 0) # number of rows in data
+    for D in splitData:
+        gain -= np.size(D, 0) / totalExamples * entropy(D)
     return gain
 
 def splitCriterion(data, attrs):
