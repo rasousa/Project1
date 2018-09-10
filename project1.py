@@ -79,6 +79,27 @@ def decompose(data, pos):
 
     return d
 
+def isHomogeneous(counts):
+    a = counts[0]
+    b = counts[1]
+    c = counts[2]
+    if a > 0:
+        if b == 0 and c == 0:
+            return True
+        else:
+            return False
+    if b > 0:
+        if a == 0 and c == 0:
+            return True
+        else:
+            return False
+    if c > 0:
+        if a == 0 and b == 0:
+            return True
+        else:
+            return False
+    return False
+
 ### SPLIT CRITERIA ###
 
 def entropy(data):
@@ -108,7 +129,7 @@ def infoGain(data, att):
     return gain
 
 def splitCriterion(data, attrs):
-    bestAtt = attrs[0]
+    bestAtt = 0
     bestIG = 0
     for att in attrs:
         ig = infoGain(data, att)
@@ -126,6 +147,22 @@ def chiSquare(data):
             #result += (realCount - expCount)*(realCount - expCount)/expCount
     return result
 
+def impure(data):
+    # If empty, not impure
+    if np.size(data) == 0:
+        return False
+
+    counts = countPerClass(data)
+
+    # If homogeneneous, not impure
+    if isHomogeneous(counts):
+        return False
+
+    # Else impure
+    return True
+
+    # TODO: implement chi-square for determining purity
+
 ### ID3 TREE STRUCTURE ###
 
 class baseNode(object):
@@ -142,17 +179,18 @@ class id3Node(baseNode, NodeMixin):
 def buildTree(data, parent, attrs):
     t = id3Node(parent)
     t.label = representativeClass(data)
-    #if(impure(data))
-        #result = splitCriterion(data, attrs) #find position with most IG
-        #criterion = result[0]
-        #attrs.remove(criterion) #remove pos from possible attrs
-        #t.ig = result[1]
-        #t.attr = criterion
-    #else
-        #return t
-    #splitData = decompose(data, criterion)
-    #for D in splitData:
-        #buildTree(D, t, attrs) #build tree on split data with t as parent
+    criterion = 0
+    if(impure(data)):
+        result = splitCriterion(data, attrs) #find position with most IG
+        criterion = result[0]
+        attrs.remove(criterion) #remove pos from possible attrs
+        t.ig = result[1]
+        t.attr = criterion
+    else:
+        return t
+    splitData = decompose(data, criterion)
+    for D in splitData:
+        buildTree(D, t, attrs) #build tree on split data with t as parent
     return t
 
 ### MAIN ###
