@@ -16,9 +16,61 @@ def processFile(path):
     f.close()
     return a
 
+### HELPER FUNCTIONS ###
+
+# Return the most common class in the data
+def representativeClass(data):
+    c = "N"
+    countIE = 0
+    countEI = 0
+    countN = 0
+    for row in data:
+        val = row[2]
+        if val == "IE":
+            countIE += 1
+        elif val == "EI":
+            countEI += 1
+        elif val == "N":
+            countN += 1
+        else:
+            countN += 1
+    maximum = max(countIE, countEI, countN)
+    if countIE == maximum:
+        c = "IE"
+    elif countEI == maximum:
+        c = "EI"
+    else:
+        c = "N"
+    return c
+
+# Return an array of arrays, split by value at pos
+def decompose(data, pos):
+    da = np.zeros_like(data)
+    dc = np.zeros_like(data)
+    dg = np.zeros_like(data)
+    dt = np.zeros_like(data)
+    dother = np.zeros_like(data)
+
+    for row in data:
+        val = row[1][pos] # get letter of DNA string at position pos
+        if val == 'A':
+            da = np.vstack((da, row))
+        elif val == 'C':
+            dc = np.vstack((dc, row))
+        elif val == 'G':
+            dg = np.vstack((dg, row))
+        elif val == 'T':
+            dt = np.vstack((dt, row))
+        else:
+            dother = np.vstack((dother, row))
+
+    d = np.array([ da[1:], dc[1:], dg[1:], dt[1:], dother[1:] ])
+
+    return d
+
 ### SPLIT CRITERIA ###
 
-def giniIndex():
+def giniIndex(data, att):
     result = 0
     # handle target attributes with arbitrary labels
     #dictionary = summarizeExamples(examples, targetAttribute)
@@ -27,7 +79,7 @@ def giniIndex():
         #result += proportion * proportion
     return 1 - result
 
-def entropy(data):
+def entropy(data, att):
     result = 0
     # handle target attributes with arbitrary labels
     #dictionary = summarizeExamples(examples, targetAttribute)
@@ -36,17 +88,31 @@ def entropy(data):
         #result -= proportion * log2(proportion)
     return result
 
-def infoGain(data):
+def infoGain(data, att):
     gain = entropy(data)
     #for value in attributeValues(examples, attribute):
         #sub = subset(examples, attribute, value)
-        #gain -=  (number in sub)/(total number of examples) * entropy(sub)
+        #gain -=  (number in sub)/(total num of examples) * entropy(sub)
     return gain
+
+def splitCriterion(data, attrs):
+    bestAtt = attrs[0]
+    bestIG = 0
+    for att in attrs:
+        ig = infoGain(data, att)
+        if ig > bestIG:
+            bestAtt = att
+            bestIG = ig
+    return [bestAtt, ig]
 
 ### STOP CRITERIA ###
 
-#def chiSquare():
-    # TODO
+def chiSquare():
+    result = 0
+    #for class in classes:
+        #for value in attrValues:
+            #result += (realCount - expCount)*(realCount - expCount)/expCount
+    return result
 
 ### ID3 TREE STRUCTURE ###
 
@@ -54,24 +120,28 @@ class baseNode(object):
     foo = 4
 
 class id3Node(baseNode, NodeMixin):
-    def __init__(self, parent=None, classify="None", attr=[], ig=0, chi=0):
+    def __init__(self, parent=None, my_class="None", attr=[], ig=0, chi=0):
         self.parent = parent
-        self.classify = classify
+        self.my_class = my_class
         self.attr = attr
         self.ig = ig
         self.chi = chi
 
-def buildTree(data, parent):
+def buildTree(data, parent, attrs):
     t = id3Node(parent)
-    #label(t) = representativeClass(data)
+    t.my_class = representativeClass(data)
     #if(impure(data))
-        #criterion = splitCriterion(data)
+        #result = splitCriterion(data, attrs) #find position with most IG
+        #criterion = result[0]
+        #attrs.remove(criterion) #remove pos from possible attrs
+        #t.ig = result[1]
+        #t.attr = criterion
     #else
         #return t
-    #[D1, D2, ..., Dn] = decomposing(data, criterion)
-    #for D in [D]:
-        #buildTree(D, t) #build tree on split data with t as parent
-    #return t
+    #splitData = decompose(data, criterion)
+    #for D in splitData:
+        #buildTree(D, t, attrs) #build tree on split data with t as parent
+    return t
 
 ### MAIN ###
 
@@ -92,7 +162,9 @@ def main():
     #print(trainingData)
 
     # Build the decision tree
-    dt = buildTree(trainingData, None)
+    # use training data, dt is the root, attrs are from 0 to 59
+    attrs = range(0, 59)
+    dt = buildTree(trainingData, None, attrs)
 
     # Print for testing purposes
     print(dt)
