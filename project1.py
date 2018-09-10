@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
-from anytree import Node, NodeMixin
+from anytree import Node, NodeMixin, RenderTree
 import sys
 import os
+import math
 
 # USAGE: python3 project1.py training.csv testing.csv
 
@@ -18,9 +19,8 @@ def processFile(path):
 
 ### HELPER FUNCTIONS ###
 
-# Return the most common class in the data
-def representativeClass(data):
-    c = "N"
+# Return an array with [countIE, countEI, countN]
+def countPerClass(data):
     countIE = 0
     countEI = 0
     countN = 0
@@ -34,7 +34,18 @@ def representativeClass(data):
             countN += 1
         else:
             countN += 1
+    return [countIE, countEI, countN]
+
+# Return the most common class in the data
+# In case of a tie, TODO
+def representativeClass(data):
+    c = "N"
+    result = countPerClass(data)
+    countIE = result[0]
+    countEI = result[1]
+    countN = result[2]
     maximum = max(countIE, countEI, countN)
+    # TODO: worry about tie cases?
     if countIE == maximum:
         c = "IE"
     elif countEI == maximum:
@@ -72,24 +83,24 @@ def decompose(data, pos):
 
 def giniIndex(data, att):
     result = 0
-    # handle target attributes with arbitrary labels
-    #dictionary = summarizeExamples(examples, targetAttribute)
-    #for key in dictionary:
-        #proportion = dictionary[key]/total number of examples
-        #result += proportion * proportion
+    summary = countPerClass(data)
+    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
+    for count in summary:
+        proportion = count/totalExamples
+        result -= proportion * proportion
     return 1 - result
 
 def entropy(data, att):
     result = 0
-    # handle target attributes with arbitrary labels
-    #dictionary = summarizeExamples(examples, targetAttribute)
-    #for key in dictionary:
-        #proportion = dictionary[key]/total number of examples
-        #result -= proportion * log2(proportion)
+    summary = countPerClass(data)
+    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
+    for count in summary:
+        proportion = count/totalExamples
+        result -= proportion * math.log2(proportion)
     return result
 
 def infoGain(data, att):
-    gain = entropy(data)
+    gain = entropy(data, att)
     #for value in attributeValues(examples, attribute):
         #sub = subset(examples, attribute, value)
         #gain -=  (number in sub)/(total num of examples) * entropy(sub)
@@ -107,7 +118,7 @@ def splitCriterion(data, attrs):
 
 ### STOP CRITERIA ###
 
-def chiSquare():
+def chiSquare(data):
     result = 0
     #for class in classes:
         #for value in attrValues:
@@ -120,16 +131,16 @@ class baseNode(object):
     foo = 4
 
 class id3Node(baseNode, NodeMixin):
-    def __init__(self, parent=None, my_class="None", attr=[], ig=0, chi=0):
+    def __init__(self, parent=None, label="None", attr=[], ig=0, chi=0):
         self.parent = parent
-        self.my_class = my_class
+        self.label = label
         self.attr = attr
         self.ig = ig
         self.chi = chi
 
 def buildTree(data, parent, attrs):
     t = id3Node(parent)
-    t.my_class = representativeClass(data)
+    t.label = representativeClass(data)
     #if(impure(data))
         #result = splitCriterion(data, attrs) #find position with most IG
         #criterion = result[0]
@@ -163,11 +174,13 @@ def main():
 
     # Build the decision tree
     # use training data, dt is the root, attrs are from 0 to 59
-    attrs = range(0, 59)
+    attrs = set(range(0, 59))
     dt = buildTree(trainingData, None, attrs)
 
     # Print for testing purposes
-    print(dt)
+    print(dt.label)
+
+    # Classify the testing data
 
 if __name__ == '__main__':
     main()
