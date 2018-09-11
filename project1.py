@@ -56,11 +56,12 @@ def representativeClass(data):
 
 # Return an array of arrays, split by value at pos
 def decompose(data, pos):
-    da = np.zeros_like(data)
-    dc = np.zeros_like(data)
-    dg = np.zeros_like(data)
-    dt = np.zeros_like(data)
-    dother = np.zeros_like(data)
+    sampleRow = data[0]
+    da = np.zeros_like(sampleRow)
+    dc = np.zeros_like(sampleRow)
+    dg = np.zeros_like(sampleRow)
+    dt = np.zeros_like(sampleRow)
+    dother = np.zeros_like(sampleRow)
 
     for row in data:
         val = row[1][pos] # get letter of DNA string at position pos
@@ -75,7 +76,17 @@ def decompose(data, pos):
         else:
             dother = np.vstack((dother, row))
 
-    d = np.array([ da[1:], dc[1:], dg[1:], dt[1:], dother[1:] ])
+    # Cut out first, initial row for each
+    da = np.delete(da, 0)
+    dc = np.delete(dc, 0)
+    dg = np.delete(dg, 0)
+    dt = np.delete(dt, 0)
+    dother = np.delete(dother, 0)
+
+    # Print for debugging purposes
+    #print(da)
+
+    d = np.array([ da, dc, dg, dt, dother ])
 
     return d
 
@@ -103,18 +114,25 @@ def isHomogeneous(counts):
 ### SPLIT CRITERIA ###
 
 def entropy(data):
+    totalExamples = np.size(data, 0)
+    # No division by 0
+    if totalExamples == 0:
+        return 0
     result = 0
     summary = countPerClass(data)
-    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
     for count in summary:
         proportion = count/totalExamples
-        result -= proportion * math.log2(proportion)
+        if proportion != 0: # No log of zero
+            result -= proportion * math.log2(proportion)
     return result
 
 def giniIndex(data):
+    totalExamples = np.size(data, 0)
+    # No division by 0
+    if totalExamples == 0:
+        return 0
     result = 0
     summary = countPerClass(data)
-    totalExamples = summary[0] + summary[1] + summary[2] #TODO: this or dimensions of data?
     for count in summary:
         proportion = count/totalExamples
         result += proportion * proportion
@@ -136,7 +154,7 @@ def splitCriterion(data, attrs):
         if ig > bestIG:
             bestAtt = att
             bestIG = ig
-    return [bestAtt, ig]
+    return [bestAtt, bestIG]
 
 ### STOP CRITERIA ###
 
@@ -183,7 +201,7 @@ def buildTree(data, parent, attrs):
     if(impure(data)):
         result = splitCriterion(data, attrs) #find position with most IG
         criterion = result[0]
-        attrs.remove(criterion) #remove pos from possible attrs
+        attrs = attrs.remove(criterion) #remove pos from possible attrs
         t.ig = result[1]
         t.attr = criterion
     else:
