@@ -8,6 +8,7 @@ import math
 # USAGE: python3 project1.py training.csv testing.csv
 
 ### FILE PROCESSING ###
+# Given a path to a file, return it as a np array
 def processFile(path):
     f = open(path, "r")
 
@@ -16,6 +17,10 @@ def processFile(path):
 
     f.close()
     return a
+
+# Given a np array, return it as a file with header id,class
+#def createFile(a):
+
 
 ### HELPER FUNCTIONS ###
 
@@ -90,25 +95,11 @@ def decompose(data, pos):
 
     return d
 
-def isHomogeneous(counts):
-    a = counts[0]
-    b = counts[1]
-    c = counts[2]
-    if a > 0:
-        if b == 0 and c == 0:
+# Return true if any count equals the total number of examples, false otherwise
+def isHomogeneous(counts, total):
+    for count in counts:
+        if count == total:
             return True
-        else:
-            return False
-    if b > 0:
-        if a == 0 and c == 0:
-            return True
-        else:
-            return False
-    if c > 0:
-        if a == 0 and b == 0:
-            return True
-        else:
-            return False
     return False
 
 ### SPLIT CRITERIA ###
@@ -166,14 +157,16 @@ def chiSquare(data):
     return result
 
 def impure(data):
+    numRows = np.size(data)
+
     # If empty, not impure
-    if np.size(data) == 0:
+    if numRows == 0:
         return False
 
     counts = countPerClass(data)
 
     # If homogeneneous, not impure
-    if isHomogeneous(counts):
+    if isHomogeneous(counts, numRows):
         return False
 
     # Else impure
@@ -187,29 +180,77 @@ class baseNode(object):
     foo = 4
 
 class id3Node(baseNode, NodeMixin):
-    def __init__(self, parent=None, label="None", attr=[], ig=0, chi=0):
+    def __init__(self, parent=None, label="None", attr=[], value="", ig=0, chi=0, isChild=False):
         self.parent = parent
         self.label = label
         self.attr = attr
+        self.value = value
         self.ig = ig
         self.chi = chi
+        self.isChild = isChild
 
 def buildTree(data, parent, attrs):
     t = id3Node(parent)
     t.label = representativeClass(data)
     criterion = 0
-    if(impure(data)):
+    if impure(data):
+        if not attrs: # no more attributes to split off of
+            t.isChild = True
+            return t
         result = splitCriterion(data, attrs) #find position with most IG
         criterion = result[0]
-        attrs = attrs.remove(criterion) #remove pos from possible attrs
+        attrs.remove(criterion) #remove pos from possible attrs
         t.ig = result[1]
         t.attr = criterion
     else:
+        t.isChild = True
         return t
     splitData = decompose(data, criterion)
     for D in splitData:
         buildTree(D, t, attrs) #build tree on split data with t as parent
     return t
+
+### CLASSIFICATION ###
+
+# Return label of this row given node of a decision tree
+def classifyHelper(row, node):
+    # Node is none, return most common class in tree
+    if not node:
+        label = representativeClass(data)
+    # Node is leaf
+    elif node.isChild == True:
+        label = node.label
+    # Node is decision node
+    else:
+        # Find appropriate child node
+        child = 0
+        val = row[1][node.attr]
+        if val == 'A':
+            child = 0
+        elif val == 'C':
+            child = 1
+        elif val == 'G':
+            child = 2
+        elif val == 'T':
+            child = 3
+        else:
+            child = 4
+        newNode = node.children[child]
+        # Run again on child node
+        label = classifyHelper(row, newNode)
+    return label
+
+# Return a np array with format id,class
+def classify(data, node):
+    example = np.array([1,"EI"])
+    result = np.zeros_like(example)
+    for row in data:
+        # Find label for this row
+        label = classifyHelper(row, node)
+        # Add label and id to result
+        result = np.vstack((result, [row[0], label]))
+    result = np.delete(result, 0)
+    return result
 
 ### MAIN ###
 
@@ -231,13 +272,18 @@ def main():
 
     # Build the decision tree
     # use training data, dt is the root, attrs are from 0 to 59
-    attrs = set(range(0, 59))
+    attrs = set(range(0, 60))
     dt = buildTree(trainingData, None, attrs)
 
     # Print for testing purposes
-    print(dt.label)
+    print(RenderTree(dt))
 
     # Classify the testing data
+    result = classify(testingData, dt)
+
+    print(result)
+
+    #createFile(result)
 
 if __name__ == '__main__':
     main()
