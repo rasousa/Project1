@@ -10,17 +10,16 @@ import math
 ### FILE PROCESSING ###
 # Given a path to a file, return it as a np array
 def processFile(path):
-    f = open(path, "r")
-
-    # Read into a numpy array
-    a = np.genfromtxt(f, dtype=None, delimiter=',', encoding=None)
-
-    f.close()
+    with open(path, 'r') as f:
+        # Read into a numpy array
+        a = np.genfromtxt(f, dtype=None, delimiter=',', encoding=None)
     return a
 
-# Given a np array, return it as a file with header id,class
-#def createFile(a):
-
+# Given a np array, return it as a file
+def createFile(a):
+    #np.savetxt("solution.csv", a, delimiter=',', fmt='<U21')
+    df = pd.DataFrame(a)
+    df.to_csv("solution.csv", header=None, index=None)
 
 ### HELPER FUNCTIONS ###
 
@@ -243,13 +242,14 @@ def classifyHelper(row, node):
 # Return a np array with format id,class
 def classify(data, node):
     example = np.array([1,"EI"])
+    #dtype = [('id', np.uint16), ('class', np.str)]
     result = np.zeros_like(example)
     for row in data:
         # Find label for this row
         label = classifyHelper(row, node)
         # Add label and id to result
         result = np.vstack((result, [row[0], label]))
-    result = np.delete(result, 0)
+    result[0] = ['id','class']
     return result
 
 ### MAIN ###
@@ -276,14 +276,14 @@ def main():
     dt = buildTree(trainingData, None, attrs)
 
     # Print for testing purposes
-    print(RenderTree(dt))
+    #print(RenderTree(dt))
 
     # Classify the testing data
     result = classify(testingData, dt)
 
     print(result)
 
-    #createFile(result)
+    createFile(result)
 
 if __name__ == '__main__':
     main()
