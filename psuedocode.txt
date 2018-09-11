@@ -21,3 +21,8 @@ id,class
 2003,N
 2004,IE
 etc.
+
+Notes:
+-first attempt did slightly better with entropy than gini
+		-entropy = 0.72899
+		-gini = 0.72268

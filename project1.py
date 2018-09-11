@@ -7,7 +7,18 @@ import math
 
 # USAGE: python3 project1.py training.csv testing.csv
 
+################################
+### GLOBAL VARIABLE SETTINGS ###
+################################
+
+# Choose between Gini Index or entropy for information gain
+# Default is entropy, set GINI = 1 for Gini Index
+GINI = 0
+
+#######################
 ### FILE PROCESSING ###
+#######################
+
 # Given a path to a file, return it as a np array
 def processFile(path):
     with open(path, 'r') as f:
@@ -21,7 +32,9 @@ def createFile(a):
     df = pd.DataFrame(a)
     df.to_csv("solution.csv", header=None, index=None)
 
+########################
 ### HELPER FUNCTIONS ###
+########################
 
 # Return an array with [countIE, countEI, countN]
 def countPerClass(data):
@@ -101,7 +114,9 @@ def isHomogeneous(counts, total):
             return True
     return False
 
+######################
 ### SPLIT CRITERIA ###
+######################
 
 def entropy(data):
     totalExamples = np.size(data, 0)
@@ -128,7 +143,7 @@ def giniIndex(data):
         result += proportion * proportion
     return 1 - result
 
-def infoGain(data, att):
+def infoGainE(data, att):
     gain = entropy(data)
     splitData = decompose(data, att)
     totalExamples = np.size(data, 0) # number of rows in data
@@ -136,8 +151,22 @@ def infoGain(data, att):
         gain -= np.size(D, 0) / totalExamples * entropy(D)
     return gain
 
+def infoGainG(data, att):
+    gain = giniIndex(data)
+    splitData = decompose(data, att)
+    totalExamples = np.size(data, 0) # number of rows in data
+    for D in splitData:
+        gain -= np.size(D, 0) / totalExamples * giniIndex(D)
+    return gain
+
+def infoGain(data, att):
+    if GINI:
+        return infoGainG(data, att)
+    return infoGainE(data, att)
+
 def splitCriterion(data, attrs):
-    bestAtt = 0
+    bestAtt = attrs.pop()
+    attrs.add(bestAtt)
     bestIG = 0
     for att in attrs:
         ig = infoGain(data, att)
@@ -146,7 +175,9 @@ def splitCriterion(data, attrs):
             bestIG = ig
     return [bestAtt, bestIG]
 
+#####################
 ### STOP CRITERIA ###
+#####################
 
 def chiSquare(data):
     result = 0
@@ -173,7 +204,9 @@ def impure(data):
 
     # TODO: implement chi-square for determining purity
 
+##########################
 ### ID3 TREE STRUCTURE ###
+##########################
 
 class baseNode(object):
     foo = 4
@@ -209,7 +242,9 @@ def buildTree(data, parent, attrs):
         buildTree(D, t, attrs) #build tree on split data with t as parent
     return t
 
+######################
 ### CLASSIFICATION ###
+######################
 
 # Return label of this row given node of a decision tree
 def classifyHelper(row, node):
@@ -242,7 +277,6 @@ def classifyHelper(row, node):
 # Return a np array with format id,class
 def classify(data, node):
     example = np.array([1,"EI"])
-    #dtype = [('id', np.uint16), ('class', np.str)]
     result = np.zeros_like(example)
     for row in data:
         # Find label for this row
@@ -252,7 +286,9 @@ def classify(data, node):
     result[0] = ['id','class']
     return result
 
+############
 ### MAIN ###
+############
 
 def main():
     # Get the training and testing file paths
@@ -271,7 +307,6 @@ def main():
     #print(trainingData)
 
     # Build the decision tree
-    # use training data, dt is the root, attrs are from 0 to 59
     attrs = set(range(0, 60))
     dt = buildTree(trainingData, None, attrs)
 
