@@ -18,7 +18,7 @@ GINI = 0
 
 # Set confidence level for chi-square
 # Choose between 0.99, 0.95, and 0 confidence level (99%, 95%, 0%)
-CONFIDENCE_LEVEL = .95
+CONFIDENCE_LEVEL = 0
 ALPHA = 1 - CONFIDENCE_LEVEL
 
 # Degrees of freedom for chi-square
@@ -158,6 +158,7 @@ def giniIndex(data):
 
 def infoGainE(data, att):
     gain = entropy(data)
+    print("splitting data")
     splitData = decompose(data, att)
     totalExamples = np.size(data, 0) # number of rows in data
     for D in splitData:
@@ -178,6 +179,7 @@ def infoGain(data, att):
     return infoGainE(data, att)
 
 def splitCriterion(data, attrs):
+    print("Finding best split criterion")
     bestAtt = attrs.pop()
     attrs.add(bestAtt)
     bestIG = 0
@@ -210,6 +212,8 @@ def chiSquare(data, att):
     return result
 
 def chiSquareTest(data, att):
+    if CONFIDENCE_LEVEL == 0:
+        return True
     print("running chi square on position ", att)
     chi = chiSquare(data, att)
     if chi > CRITICAL_VALUE:
@@ -219,6 +223,7 @@ def chiSquareTest(data, att):
     return False
 
 def impure(data):
+    print("Checking impurity")
     numRows = np.size(data)
     # If empty, not impure
     if numRows == 0:
@@ -340,6 +345,7 @@ def main():
     #print(trainingData)
 
     # Build the decision tree
+    print("Building tree...")
     attrs = set(range(0, 60))
     dt = buildTree(trainingData, None, attrs)
 
@@ -347,6 +353,7 @@ def main():
     #print(RenderTree(dt))
 
     # Classify the testing data
+    print("Classifying testing data...")
     result = classify(testingData, dt)
 
     # Print for testing purposes
