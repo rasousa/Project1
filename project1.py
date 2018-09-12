@@ -192,17 +192,29 @@ def splitCriterion(data, attrs):
 ### STOP CRITERIA ###
 #####################
 
-def chiSquare(data):
+def chiSquare(data, att):
     result = 0
     parentCounts = countPerClass(data)
-    children = decompose()
-    classes = ["IE", "EI", "N"]
-    #for c in classes:
-        #for value in attrValues:
-            #realCount = 0
-            #expCount = 0
-            #result += (realCount - expCount)*(realCount - expCount)/expCount
+    parentTotal = parentCounts[0] + parentCounts[1] + parentCounts[2]
+    children = decompose(data, att)
+    classes = [0, 1, 2]
+    for c in classes:
+        for child in children:
+            childCounts = countPerClass(child)
+            realCount = childCounts[c]
+            childTotal = childCounts[0] + childCounts[1] + childCounts[2]
+            expCount = childTotal * parentCounts[c]/ parentTotal
+            # No division by 0
+            if expCount == 0:
+                return sys.maxsize
+            result += (realCount - expCount)*(realCount - expCount)/expCount
     return result
+
+def chiSquareTest(data, att):
+    chi = chiSquare(data, att)
+    if chi > CRITICAL_VALUE:
+        return True
+    return False
 
 def impure(data):
     numRows = np.size(data)
@@ -215,7 +227,6 @@ def impure(data):
         return False
     # Else impure
     return True
-    # TODO: implement chi-square for determining purity
 
 ##########################
 ### ID3 TREE STRUCTURE ###
@@ -244,10 +255,13 @@ def buildTree(data, parent, attrs):
             t.isChild = True
             return t
         result = splitCriterion(data, attrs) #find position with most IG
-        criterion = result[0]
-        attrs.remove(criterion) #remove pos from possible attrs
+        pos = result[0]
+        # Do a chi square test to see if we should split on pos
+        #if not chiSquareTest(data, pos):
+            #return t
+        attrs.remove(pos) #remove pos from possible attrs
         t.ig = result[1]
-        t.attr = criterion
+        t.attr = pos
     else:
         t.isChild = True
         return t
