@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 from anytree import Node, NodeMixin, RenderTree
 import sys
 import os
@@ -14,6 +15,18 @@ import math
 # Choose between Gini Index or entropy for information gain
 # Default is entropy, set GINI = 1 for Gini Index
 GINI = 0
+
+# Set confidence level for chi-square
+# Choose between 0.99, 0.95, and 0 confidence level (99%, 95%, 0%)
+CONFIDENCE_LEVEL = 0
+ALPHA = 1 - CONFIDENCE_LEVEL
+
+# Degrees of freedom for chi-square
+# Dof = (classes-1)(values-1) = (3-1)(5-1) = 8
+DOF = 8
+
+# Critical value calculated from alpha and dof
+CRITICAL_VALUE = stats.chi2.ppf(CONFIDENCE_LEVEL, DOF)
 
 #######################
 ### FILE PROCESSING ###
@@ -181,27 +194,27 @@ def splitCriterion(data, attrs):
 
 def chiSquare(data):
     result = 0
-    #for class in classes:
+    parentCounts = countPerClass(data)
+    children = decompose()
+    classes = ["IE", "EI", "N"]
+    #for c in classes:
         #for value in attrValues:
+            #realCount = 0
+            #expCount = 0
             #result += (realCount - expCount)*(realCount - expCount)/expCount
     return result
 
 def impure(data):
     numRows = np.size(data)
-
     # If empty, not impure
     if numRows == 0:
         return False
-
     counts = countPerClass(data)
-
     # If homogeneneous, not impure
     if isHomogeneous(counts, numRows):
         return False
-
     # Else impure
     return True
-
     # TODO: implement chi-square for determining purity
 
 ##########################
@@ -212,7 +225,8 @@ class baseNode(object):
     foo = 4
 
 class id3Node(baseNode, NodeMixin):
-    def __init__(self, parent=None, label="None", attr=[], value="", ig=0, chi=0, isChild=False):
+    def __init__(self, parent=None, label="None", attr=[], value="",
+    ig=0, chi=0, isChild=False):
         self.parent = parent
         self.label = label
         self.attr = attr
@@ -316,9 +330,12 @@ def main():
     # Classify the testing data
     result = classify(testingData, dt)
 
-    print(result)
+    # Print for testing purposes
+    #print(result)
 
     createFile(result)
+
+    print("Classification successful.")
 
 if __name__ == '__main__':
     main()

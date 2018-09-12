@@ -9,7 +9,7 @@ Split stopping with chi-square
 Notes:
 -label/class: IE, EI, N
 -features: set(0...59)
--values: A, C, G, T, (D, R, N)
+-values: A, C, G, T, (D, R, N, S)
 
 Output:
 The file should contain a header and have the following format: id,class
