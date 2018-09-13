@@ -1,0 +1,5 @@
+Version: Python 3.7.0
+
+Libraries: numpy, scipy, pandas, anyTree
+
+Usage: python3 project1.py training.csv testing.csv

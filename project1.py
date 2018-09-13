@@ -18,7 +18,7 @@ GINI = 0
 
 # Set confidence level for chi-square
 # Choose between 0.99, 0.95, and 0 confidence level (99%, 95%, 0%)
-CONFIDENCE_LEVEL = 0
+CONFIDENCE_LEVEL = 0.99
 ALPHA = 1 - CONFIDENCE_LEVEL
 
 # Degrees of freedom for chi-square
@@ -158,7 +158,7 @@ def giniIndex(data):
 
 def infoGainE(data, att):
     gain = entropy(data)
-    print("splitting data")
+    #print("splitting data")
     splitData = decompose(data, att)
     totalExamples = np.size(data, 0) # number of rows in data
     for D in splitData:
@@ -179,7 +179,7 @@ def infoGain(data, att):
     return infoGainE(data, att)
 
 def splitCriterion(data, attrs):
-    print("Finding best split criterion")
+    #print("Finding best split criterion")
     bestAtt = attrs.pop()
     attrs.add(bestAtt)
     bestIG = 0
@@ -214,16 +214,16 @@ def chiSquare(data, att):
 def chiSquareTest(data, att):
     if CONFIDENCE_LEVEL == 0:
         return True
-    print("running chi square on position ", att)
+    #print("running chi square on position ", att)
     chi = chiSquare(data, att)
     if chi > CRITICAL_VALUE:
-        print(chi,": chi split")
+        #print(chi,": chi split")
         return True
-    print(chi,": chi stop")
+    #print(chi,": chi stop")
     return False
 
 def impure(data):
-    print("Checking impurity")
+    #print("Checking impurity")
     numRows = np.size(data)
     # If empty, not impure
     if numRows == 0:
@@ -243,48 +243,40 @@ class baseNode(object):
     foo = 4
 
 class id3Node(baseNode, NodeMixin):
-    def __init__(self, parent=None, label="None", attr=[], value="",
-    ig=0, isChild=False, isNull=False):
+    def __init__(self, parent=None, label="None", attr=[], value=""):
         self.parent = parent
         self.label = label
         self.attr = attr
         self.value = value
-        self.ig = ig
-        self.isChild = isChild
-        self.isNull = isNull
 
-def buildTree(data, parent, attrs, splitValue='', stop=False):
+def buildTree(data, parent, attrs, splitValue=''):
     t = id3Node(parent)
+    if np.size(data,0) == 0: # data is empty, use label of parent node
+        t.label = parent.label
+        return t
     t.label = representativeClass(data)
     t.value = splitValue
-    if stop: # D is empty
-        t.isNull = True
-        return t
     criterion = 0
     if impure(data):
         if not attrs: # no more attributes to split off of
-            t.isChild = True
             return t
         result = splitCriterion(data, attrs) #find position with most IG
-        pos = result[0]
+        criterion = result[0]
         # Do a chi square test to see if we should split on pos
-        if not chiSquareTest(data, pos):
+        if not chiSquareTest(data, criterion):
             t.isChild = True
             return t
-        attrs.remove(pos) #remove pos from possible attrs
+        attrs.remove(criterion) #remove pos from possible attrs
         t.ig = result[1]
-        t.attr = pos
+        t.attr = criterion
     else:
-        t.isChild = True
         return t
     splitData = decompose(data, criterion)
     values = ['A','C','G','T','other']
     i = 0
     for D in splitData:
-        if np.size(D,0) == 0: # D will be empty
-            stop = True
         splitValue = values[i]
-        buildTree(D, t, attrs, splitValue, stop) #build tree on split data with t as parent
+        buildTree(D, t, attrs, splitValue) #build tree on split data with t as parent
         i += 1
     return t
 
@@ -295,21 +287,27 @@ def buildTree(data, parent, attrs, splitValue='', stop=False):
 # Return label of this row given node of a decision tree
 def classifyHelper(row, node):
     # Node is none, return most common class in tree, aka its label
-    if node.isNull:
+    if not node:
         label = node.label
     # Node is leaf
-    elif node.isChild == True:
+    elif node.is_leaf == True:
         label = node.label
     # Node is decision node
     else:
         # Find appropriate child node
+        newNode = id3Node(None)
+        found = False
         val = row[1][node.attr] # Find value of row at position attr
         for child in node.children:
             if child.value == val: # Check if split value in child matches
                 newNode = child
+                found = True
                 break
+        if not found: # Could not find appropriate child
+            label = node.label
         # Run again on child node
-        label = classifyHelper(row, newNode)
+        else:
+            label = classifyHelper(row, newNode)
     return label
 
 # Return a np array with format id,class
