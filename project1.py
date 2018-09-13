@@ -328,12 +328,17 @@ def classify(data, node):
 
 def main():
     # Get the training and testing file paths
-    #trainingPath = os.path.abspath(sys.argv[1])
-    #testingPath = sys.argv[2]
+    try:
+        trainingPath = os.path.abspath(sys.argv[1])
+        testingPath = os.path.abspath(sys.argv[2])
+    except:
+        print("Error: not enough arguments")
+        print("Usage: python3 project1.py training.csv testing.csv")
+        sys.exit(1)
 
-    # Hardcoded paths TODO: don't be hardcoded paths
-    trainingPath = "/Users/rebeccasousa/Documents/UNM/CS529/Project1/training.csv"
-    testingPath = "/Users/rebeccasousa/Documents/UNM/CS529/Project1/testing.csv"
+    # Hardcoded paths
+    #trainingPath = "/Users/rebeccasousa/Documents/UNM/CS529/Project1/training.csv"
+    #testingPath = "/Users/rebeccasousa/Documents/UNM/CS529/Project1/testing.csv"
 
     # Convert the training and testing files into numpy arrays
     trainingData = processFile(trainingPath)
